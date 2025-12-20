@@ -1,17 +1,22 @@
 const express = require("express");
-const cors = require("cors");
 const dotenv = require("dotenv");
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const userRoutes = require("./routes/User");
+const transactionRoutes = require("./routes/Transaction")
 const Port = 8001;
+const app = express()
+const connection = require("./db/connection");
+
 
 // 1) Load env
 dotenv.config();
 
 // 2) DB connection
-const connection = require("./db/connection");
 connection();
 
-const app = express();
+console.log("JWT_SECRET_KEY:", process.env.JWT_SECRET_KEY);
+
 
 // 3) Middleware
 app.use(
@@ -24,8 +29,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 // 4) Routes
-const userRoutes = require("./routes/User");
 app.use(userRoutes); 
+app.use(transactionRoutes)
 
 // health check
 app.get("/", (req, res) => {

@@ -2,53 +2,64 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// choose a secret key from env, with a fallback
-const createSecretKey =
-  process.env.JWT_SECRET || process.env.JWT_SECRET_KEY || 'nodejs';
+// if (!process.env.JWT_SECRET_KEY) {
+//   throw new Error('JWT_SECRET is not defined');
+// }
+const JWT_SECRET = process.env.JWT_SECRET_KEY || 'dev_secret';
+if (!JWT_SECRET) {
+  console.error("❌ JWT_SECRET_KEY is not defined in .env!");
+  //process.exit(1); // stop the server immediately
+}
 
 const signUp = async (req, res) => {
-  try {
+  // try {
+  console.log("JWT_SECRET:", JWT_SECRET);
+  console.log("JWT_SECRET_KEY from env:", process.env.JWT_SECRET_KEY);
+
+    const { username, email, password } = req.body;
     console.log("req.body", req.body);
 
     // 1) Check if the user is already registered
-    let user = await User.findOne({
-      $or: [
-        { email: req.body.email },
-        { username: req.body.username },
-      ],
+  if (!username || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username, email and password are required',
+      });
+    }
+ 
+      // 2) Check if user exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }],
     });
 
-    if (user) {
-      console.log(
-        "User is already registered, please sign in",
-        req.body.email
-      );
-      return res
-        .status(400)
-        .send("User is already registered, please sign in");
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'User already exists, please sign in',
+      });
     }
 
-    // 2) Password hashing
-    const salt = await bcrypt.genSalt(8);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    // 3) Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3) Save user
+    // 4) Save user
     const userData = new User({
-      ...req.body,
+      username: req.body.username,
+      email: req.body.email,
       password: hashedPassword,
     });
 
     await userData.save(); // saving data
     console.log("New user saved:", userData._id.toString());
 
-    // 4) Create JWT token
+    // 5) Create JWT token
     const token = jwt.sign(
       { _id: userData._id, role: userData.role },
-      createSecretKey,
+       JWT_SECRET,
       { expiresIn: "1d" } // match cookie lifetime nicely
     );
 
-    // 5) Set cookie
+    // 6) Set cookie
     res.cookie("token", token, {
       httpOnly: true,
        secure: false,   // false in dev, true in prod
@@ -56,69 +67,76 @@ const signUp = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
 
-    // 6) Send response
+    // 7) Send response
     return res.status(201).json({
       success: true,
       token,         // or jwt: token if you prefer
       user: userData,
       message: "Successfully registered a new user!",
     });
-  } catch (e) {
-    console.log("Error", e);
-    return res
-      .status(500)
-      .send("Some Internal Error Occurred");
-  }
+    
+  // } catch (e) {
+  //   console.log("Signed upError", e);
+  //   return res
+  //     .status(500)
+  //     .send("Some Internal Error Occurred");
+  // }
 };
 
-const signIn = async(req,res)=>{
-    try{
-        console.log("req.body",req.body)
-        const user = await User.findOne({email:req.body.email})
-        if(!user){
-            console.log("SignIn failed: user not found",email)
-            return res.status(401).send({
-                success:false,
-                message:"Invalid email or password"
-            })
-        }
+const signIn = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-        const isMatch = await bcrypt.compare(req.body.password,user.password)
-        if(!isMatch){
-            console.log("SignIn failed: wrong password",email)
-            return res.status(401).send({
-                sucesses:false,
-                message:"Invalid password, please check again"
-            })
-        }
-
-        // create JWT token
-        const token = jwt.sign(
-            {_id:user._id, role:user.role},
-            createSecretKey,
-            {expiresIn:"1d"}
-        )
-
-        //set cookie
-        res.cookie("token",token,{
-            httpOnly:true,
-            secure:false,
-            sameSite:'lax',
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-
-        })
-
-        //send response
-        return res.status(200).send({
-            success:true,
-            token,
-            user,
-            message:"Successfully Sign in !"
-        })
-    }catch(e){
-        console.error("Error",e)
-        res.status(500).send("Some Internal Error")
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Email and password required" });
     }
-}
+
+    // Find user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid email or password" });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { _id: user._id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Set httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    // Send safe response
+    const safeUser = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    };
+
+    return res.status(200).json({
+      success: true,
+      user: safeUser,
+      message: "Successfully signed in!",
+    });
+
+  } catch (error) {
+    console.error("SignIn error:", error);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
 
 module.exports = { signUp , signIn};

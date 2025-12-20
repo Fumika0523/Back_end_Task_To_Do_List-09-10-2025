@@ -28,11 +28,23 @@ const userSchema=new mongoose.Schema(
      { timestamps: true }
 )
 
+//userSchema.methods = where you define instance methods for this schema
+//generateAuthToken = the name of the method >> every User document(e.g const user = await User.findById(...)) will have a function you can call:
+userSchema.methods.generateAuthToken = async function(){
+const user = this; // inside a Mongoose instance method, this refer to the current document. The inside generateAuthToken, this is the same user you just found
+const token = jwt.sign({ // jwt.sign() creates (sign) a JWT token
+// a payload >> what data you want inside the token
+// a secret key >> used to sign and later verify the token
+// some options >> like expiration time
+    _id:user.id,
+    role:user.role },
+    process.env.JWT_SECRET_KEY, // make sure this exists in .env
+    )
+    console.log(token)
+   return token
+}
+
+
 
 const User = mongoose.model("User",userSchema)
 module.exports = User
-
-
-//When the user signs up/sign in , the controller creates and save a new User documents with your mode, then calls user.generateAuthToken() to create a JWT(using the user's _id and role) and finally sends that token back to the browser (in a cookie) so the user stays logged in.
-
-//When a user signs up or logs in, the controller saves or fetches that user from MongoDB, calls user.generateAuthToken(), and inside that method const user = this refers to that saved user document, which is then used to create a JWT (with their _id and role) that the controller finally stores in a cookie to keep them logged in.
