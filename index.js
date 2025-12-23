@@ -1,5 +1,6 @@
-const express = require("express");
 const dotenv = require("dotenv");
+require('dotenv').config();
+const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const userRoutes = require("./routes/User");
@@ -8,9 +9,8 @@ const Port = 8001;
 const app = express()
 const connection = require("./db/connection");
 
-
 // 1) Load env
-dotenv.config();
+// dotenv.config();
 
 // 2) DB connection
 connection();
@@ -30,7 +30,7 @@ app.use(cookieParser());
 
 // 4) Routes
 app.use(userRoutes); 
-app.use(transactionRoutes)
+app.use("/transaction",transactionRoutes)
 
 // health check
 app.get("/", (req, res) => {

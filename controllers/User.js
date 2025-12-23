@@ -54,7 +54,7 @@ const signUp = async (req, res) => {
 
     // 5) Create JWT token
     const token = jwt.sign(
-      { _id: userData._id, role: userData.role },
+      { userId: userData._id, role: userData.role },
        JWT_SECRET,
       { expiresIn: "1d" } // match cookie lifetime nicely
     );
@@ -106,7 +106,7 @@ const signIn = async (req, res) => {
 
     // Generate JWT
     const token = jwt.sign(
-      { _id: user._id, role: user.role },
+      { userId: user._id, role: user.role },
       JWT_SECRET,
       { expiresIn: "1d" }
     );

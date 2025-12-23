@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-
+console.log("jwt",process?.env?.JWT_SECRET_KEY)
 if (!process.env.JWT_SECRET_KEY) {
   throw new Error('JWT_SECRET_KEY is not defined');
 }
