@@ -5,7 +5,7 @@ const addTransaction = async(req,res)=>{
 // try{
     const transaction = await Transaction.create({
     ...req.body, // Use data sent from frontend (amount, type, etc.)
-    user:req.userId   // Link transaction to the logged-in user
+    userId:req.userId   // Link transaction to the logged-in user
  } )
     res.status(201).json({success:true, transaction})
 // }catch(e){
@@ -16,19 +16,19 @@ const addTransaction = async(req,res)=>{
 
 //Get ALl transactions
 const getTransactions = async(req,res)=>{
-  //  try{
+  try{
 // Only return transactions for the logged-in user
     console.log("Fetching transactions for user:", req.userId);
-    const allTransactions = await Transaction.find({user:req.userId}).sort({date:-1})
+    const allTransactions = await Transaction.find().sort({date:-1})
      res.status(201).send({success:true, allTransactions})
-    //return res.send({user:req.userId})
-    // }catch(error){
-    //     console.log("Get transactions error:",error)
-    //     return res.send(500).send({
-    //         success:false,
-    //         message:error.message
-    //     })
-    // }
+     console.log("All transactions",allTransactions)
+    }catch(error){
+        console.log("Get transactions error:",error)
+        return res.send(500).send({
+            success:false,
+            message:error.message
+        })
+    }
 }
 
 //update
@@ -39,7 +39,7 @@ const updateTransaction = async (req, res) => {
     //res.json({id})
     // Only allow user to update their own transaction
     const transaction = await Transaction.findOneAndUpdate(
-      { _id: id, user: req.userId },
+      { _id: id, userId: req.userId },
       req.body,
       { new: true } // return updated document
     );
@@ -56,7 +56,7 @@ const updateTransaction = async (req, res) => {
 const deleteTransaction = async(req,res)=>{
     try{
         const {id} = req.params
-        const transaction = await Transaction.findOneAndDelete({_id:id, user:req.userId})
+        const transaction = await Transaction.findOneAndDelete({_id:id})
             if (!transaction) return res.status(404).json({ success: false, message: "Transaction not found" });
 
     res.json({ success: true, message: "Transaction deleted" });

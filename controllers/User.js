@@ -121,7 +121,7 @@ const signIn = async (req, res) => {
 
     // Send safe response
     const safeUser = {
-      _id: user._id,
+      userId: user._id,
       username: user.username,
       email: user.email,
       role: user.role,

@@ -22,9 +22,9 @@ const auth = async (req, res, next) => {
     // Verify token with secret
     const decoded = jwt.verify(token, JWT_SECRET);
     // decoded will have: { _id, role, iat, exp }
-
+  console.log("decoded token:", decoded);  
     //  Attach data to req for later use
-    req.userId = decoded._id;
+    req.userId = decoded.userId;
     req.userRole = decoded.role;
 
     next();
