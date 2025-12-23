@@ -15,7 +15,7 @@ const transactionSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: true,
-      min: 0,
+      min: [0, 'Amount must be positive'],
     },
     category: {
       type: String,
@@ -31,7 +31,8 @@ const transactionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      default: "cash",      // e.g. "card", "bank", "cash"
+      enum: ["cash", "card", "bank", "other"],
+      default: "cash",
     },
     isRecurring: {
       type: Boolean,

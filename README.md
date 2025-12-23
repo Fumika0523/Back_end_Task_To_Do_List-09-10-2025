@@ -133,6 +133,8 @@ AI-ExpenseTracker-Pro/
    ├─ utils/         # helpers (AI, emails, etc.)
    └─ server.js
 
+> Status: 🚧 In Progress (20-hour build plan, 1 hour/day)  
+> Current Progress: ✅ Email/Password Auth complete, 🔜 Google OAuth next
 
 ## 🗺 Roadmap (20-Hour Plan)
 
@@ -151,7 +153,7 @@ AI-ExpenseTracker-Pro/
   - Decide on **cookie-based auth** strategy (JWT stored in `httpOnly` cookie)
   - Document sign-up/login flow (controller → model → JWT → cookie)
 
-- 🔜 **Day 3–5 – Auth APIs (Email/Password) + Protection**
+- ✅ **Day 3–5 – Auth APIs (Email/Password) + Protection**
   - Implement `/api/auth/signup` (register + hash password with bcrypt)
   - Implement `/api/auth/login` (validate password, generate JWT)
   - Set JWT in `httpOnly` cookie for both signup & login

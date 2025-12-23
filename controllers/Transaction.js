@@ -1,69 +1,53 @@
 const Transaction = require ('../models/Transaction')
 
-//post
-const createTransaction = async()=>{
-    try{
-        const { type, amount, category, description, date, paymentMethod, isRecurring } =
-        req.body;
+// Add a new transaction
+const addTransaction = async(req,res)=>{
+try{
+    const transaction = await Transaction.create({
+    ...req.body, // Use data sent from frontend (amount, type, etc.)
+    user:req.userId   // Link transaction to the logged-in user
+ } )
+    res.status(201).json({success:true, transaction})
+}catch(e){
+    console.log("Error in addTransaction",e)
+    res.status(500).json({ success: false, message: error.message });
+}}
 
-        if(!type || !amount || !category){
-            return res.status(400).send({
-                success:false,
-                message:"Please fill the form"
-            })
-        }
-   
-        const transaction = new Transaction({
-            userId:req.userId, //from auth middleware
-            type,
-            amount,
-            category,
-            description,
-            date,
-            paymentMethod,
-            isRecurring,
-        })
-
-        await transaction.save()
-
-        return res.status(201).send({
-            success:true,
-            message:"Transaction created successfully!",
-            transaction,
-        })
-
-    }catch(e){
-        console.error("Create Transaction error:",error)
-        return res.status(500).json({
-        success: false,
-        message: "Internal server error.",
-    });
-    }
-}
-
-//Get transactions
+//Get ALl transactions
 const getTransactions = async(req,res)=>{
     try{
-    const {type, category} = req.query
-    const query = {userId:req.userId} // only this user’s data
-
-    if(type) query.type =type;
-    if(category) query.category = category;
-
-    const transactions = (await Transaction.find(query)).sort({ date: -1 });
-
-    return res.status(200).send({
-        success:true,
-        cout:transactions.length,
-        transactions,
-    })
-    }catch(e){
+// Only return transactions for the logged-in user
+    const allTransactions = await Transaction.find({user:req.userId}).sort({date:-1})
+    res.status(201).send({success:true,allTransactions })
+    }catch(error){
         console.log("Get transactions error:",error)
-        return res.status(500).send({
+        return res.send(500).send({
             success:false,
-            message:"Internal server error."
+            message:error.message
         })
     }
 }
 
-module.exports = { createTransaction, getTransactions };
+//update
+
+const updateTransaction = async (req, res) => {
+  try {
+    const { id } = req.params; // /transactions/:id
+
+    // Only allow user to update their own transaction
+    const transaction = await Transaction.findOneAndUpdate(
+      { _id: id, user: req.userId },
+      req.body,
+      { new: true } // return updated document
+    );
+
+    if (!transaction) return res.status(404).json({ success: false, message: "Transaction not found" });
+
+    res.json({ success: true, transaction });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+module.exports = { addTransaction, getTransactions };
